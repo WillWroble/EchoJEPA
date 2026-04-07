@@ -19,3 +19,13 @@ model_data/
 *.zip
 *.tar
 *.gz
+*.npz
+*.npy
+*.h5
+*.hdf5
+#PHI
+*.out
+*.err
+*.csv
+
+

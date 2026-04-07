@@ -23,8 +23,11 @@ def init_distributed(port=37129, rank_and_world_size=(None, None)):
     if "SLURM_JOB_ID" in os.environ:
         # Use the slurm_tmpdir (if it exists) instead of /tmp
         tmpdir = Path(f"/scratch/slurm_tmpdir/{os.environ['SLURM_JOB_ID']}")
-        if tmpdir.exists():
-            os.environ["TMPDIR"] = str(tmpdir)
+        try:
+            if tmpdir.exists():
+                os.environ["TMPDIR"] = str(tmpdir)
+        except PermissionError:
+            pass
 
     if dist.is_available() and dist.is_initialized():
         return dist.get_world_size(), dist.get_rank()

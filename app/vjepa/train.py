@@ -343,7 +343,12 @@ def main(args, resume_preempt=False):
             if "predictor" in checkpoint:
                 pretrained_dict = checkpoint["predictor"]
                 pretrained_dict = {k.replace("module.", ""): v for k, v in pretrained_dict.items()}
-                msg = predictor.load_state_dict(pretrained_dict)
+                
+                # Filter out keys with size mismatch
+                current_state = predictor.state_dict()
+                filtered_dict = {k: v for k, v in pretrained_dict.items()
+                     if k in current_state and v.shape == current_state[k].shape}
+                msg = predictor.load_state_dict(filtered_dict, strict=False)
                 logger.info(f"loaded pretrained predictor from epoch {epoch_from_ckpt} with msg: {msg}")
 
             del checkpoint
