@@ -1,4 +1,4 @@
-# src/datasets/video_dataset.py
+
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
@@ -414,3 +414,115 @@ class VideoDataset(torch.utils.data.Dataset):
     
     def __len__(self):
         return len(self.samples)
+
+
+
+# ---------------------------------------------------------------------------
+# Intra-study batch sampler (for intra-study contrastive learning)
+# ---------------------------------------------------------------------------
+
+from collections import defaultdict
+from torch.utils.data import Sampler
+
+
+class IntraStudyBatchSampler(Sampler):
+    """Yields batches of M studies x K clips, grouped by integer label.
+
+    Each yielded batch is a flat list of M*K dataset indices, where every K
+    consecutive indices share the same label (study_id_int). DDP-aware: each
+    rank consumes a disjoint stride of studies per epoch.
+    """
+
+    def __init__(self, labels, m_studies, k_clips, num_replicas=1, rank=0, seed=0):
+        self.m = m_studies
+        self.k = k_clips
+        self.num_replicas = num_replicas
+        self.rank = rank
+        self.seed = seed
+        self.epoch = 0
+
+        self.study_to_idxs = defaultdict(list)
+        for i, lab in enumerate(labels):
+            self.study_to_idxs[int(lab)].append(i)
+        for lab in self.study_to_idxs:
+            self.study_to_idxs[lab] = np.array(self.study_to_idxs[lab], dtype=np.int64)
+        self.study_ids = np.array(sorted(self.study_to_idxs.keys()), dtype=np.int64)
+
+        per_rank = len(self.study_ids) // num_replicas
+        self._num_batches = per_rank // m_studies
+        self._studies_per_rank = self._num_batches * m_studies
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+    def __len__(self):
+        return self._num_batches
+
+    def __iter__(self):
+        rng = np.random.default_rng(self.seed + self.epoch)
+        order = rng.permutation(len(self.study_ids))
+        my = self.study_ids[order][self.rank::self.num_replicas][:self._studies_per_rank]
+
+        for start in range(0, len(my), self.m):
+            batch_studies = my[start:start + self.m]
+            indices = []
+            for sid in batch_studies:
+                pool = self.study_to_idxs[int(sid)]
+                replace = len(pool) < self.k
+                chosen = rng.choice(len(pool), size=self.k, replace=replace)
+                indices.extend(int(pool[c]) for c in chosen)
+            yield indices
+
+
+class IntraMRNBatchSampler:
+    def __init__(self, labels, sid_to_mrn, m_mrns, num_replicas=1, rank=0, seed=0):
+        # labels: clip-level study_id list (5.7M entries, ints)
+        # sid_to_mrn: dict[int study_id -> int mrn_id]
+        # m_mrns: number of MRNs per local batch
+        from collections import defaultdict
+        self.m_mrns = m_mrns
+        self.num_replicas = num_replicas
+        self.rank = rank
+        self.epoch = 0
+        self.seed = seed
+
+        # study_id -> [clip_idxs]
+        study_to_idxs = defaultdict(list)
+        for i, sid in enumerate(labels):
+            study_to_idxs[int(sid)].append(i)
+
+        # mrn -> [study_ids that have at least 1 clip]
+        mrn_to_studies = defaultdict(list)
+        for sid, idxs in study_to_idxs.items():
+            mrn = sid_to_mrn.get(sid)
+            if mrn is not None and len(idxs) > 0:
+                mrn_to_studies[mrn].append(sid)
+
+        # Keep only multi-visit MRNs
+        self.mrn_to_studies = {m: s for m, s in mrn_to_studies.items() if len(s) >= 2}
+        self.study_to_idxs = dict(study_to_idxs)
+        self.mrns = sorted(self.mrn_to_studies.keys())
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
+
+    def __iter__(self):
+        import random
+        rng = random.Random(self.seed + self.epoch)
+        mrns = self.mrns[:]
+        rng.shuffle(mrns)
+        # split across ranks
+        mrns = mrns[self.rank::self.num_replicas]
+        # batch them
+        for i in range(0, len(mrns) - self.m_mrns + 1, self.m_mrns):
+            batch_mrns = mrns[i:i + self.m_mrns]
+            batch = []
+            for mrn in batch_mrns:
+                s1, s2 = rng.sample(self.mrn_to_studies[mrn], 2)
+                c1 = rng.choice(self.study_to_idxs[s1])
+                c2 = rng.choice(self.study_to_idxs[s2])
+                batch.extend([c1, c2])
+            yield batch
+
+    def __len__(self):
+        return len(self.mrns) // (self.num_replicas * self.m_mrns)
