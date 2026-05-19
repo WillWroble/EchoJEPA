@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision
+import pydicom
 
 from src.datasets.utils.dataloader import ConcatIndices, MonitoredDataset, NondeterministicDataLoader
 from src.datasets.utils.weighted_sampler import DistributedWeightedSampler
@@ -243,7 +244,12 @@ class VideoDataset(torch.utils.data.Dataset):
         dataset_idx, _ = self.per_dataset_indices[index]
         frames_per_clip = self.dataset_fpcs[dataset_idx]
 
-        buffer, clip_indices = self.loadvideo_cv2(sample_uri, frames_per_clip)
+        #buffer, clip_indices = self.loadvideo_cv2(sample_uri, frames_per_clip)
+        
+        if sample_uri.endswith('.dcm'):
+            buffer, clip_indices = self.loadvideo_dcm(sample_uri, frames_per_clip)
+        else:
+            buffer, clip_indices = self.loadvideo_cv2(sample_uri, frames_per_clip)
         if buffer is None or len(buffer) == 0:
             return None
 
@@ -346,6 +352,34 @@ class VideoDataset(torch.utils.data.Dataset):
 
         return self._sample_from_cap(cap, fpc, video_fps, frame_count)
 
+    
+    
+    def loadvideo_dcm(self, sample_uri, fpc):
+        """Load video frames from a multi-frame DICOM."""
+        if not os.path.exists(sample_uri):
+            warnings.warn(f"DICOM path not found: '{sample_uri}'")
+            return [], None
+
+        try:
+            ds = pydicom.dcmread(sample_uri)
+            frames = ds.pixel_array  # (N, H, W, 3) YBR_FULL_422
+        except Exception as e:
+            warnings.warn(f"Failed to read DICOM {sample_uri}: {e}")
+            return [], None
+
+        nf = getattr(ds, 'NumberOfFrames', 1)
+        if int(nf) < 2:
+            return [], None
+
+        # YBR -> RGB
+        frames = np.stack([cv2.cvtColor(f, cv2.COLOR_YCrCb2RGB) for f in frames])
+
+        frame_count = len(frames)
+        video_fps = getattr(ds, 'CineRate', 30)  # fallback 30fps
+
+        # Reuse the same sampling logic via a fake cv2 cap interface
+        # Easier: just index directly into the array
+        return self._sample_from_frames(frames, fpc, float(video_fps), frame_count)
     def _sample_from_cap(self, cap, fpc, video_fps, frame_count):
         """Sample frames from cv2 capture. Replaces _sample_from_vr."""
         fstp = self.frame_step
@@ -412,6 +446,54 @@ class VideoDataset(torch.utils.data.Dataset):
         buffer = np.stack(frames)  # (T, H, W, 3) uint8 RGB
         return buffer, clip_indices
     
+    
+    
+    
+    def _sample_from_frames(self, frames, fpc, video_fps, frame_count):
+        fstp = self.frame_step
+        if self.duration is not None or self.fps is not None:
+            if self.duration is not None:
+                fstp = max(1, int(self.duration * video_fps / fpc))
+            else:
+                fstp = max(1, int(video_fps // max(1, self.fps)))
+
+        clip_len = int(fpc * fstp)
+        V = frame_count
+
+        if self.filter_short_videos and V < clip_len:
+            return [], None
+
+        partition_len = V // self.num_clips
+        all_indices, clip_indices = [], []
+
+        for i in range(self.num_clips):
+            if partition_len > clip_len:
+                if self.random_clip_sampling:
+                    end_indx = np.random.randint(clip_len, partition_len)
+                else:
+                    end_indx = clip_len
+                start_indx = end_indx - clip_len
+                indices = np.linspace(start_indx, end_indx, num=fpc)
+                indices = np.clip(indices, start_indx, end_indx - 1).astype(np.int64)
+                indices = indices + i * partition_len
+            else:
+                sample_len = min(clip_len, V) - 1
+                base = max(1, sample_len // fstp)
+                indices = np.linspace(0, sample_len, num=base)
+                if base < fpc:
+                    indices = np.concatenate((indices, np.ones(fpc - base) * sample_len))
+                indices = np.clip(indices, 0, max(0, V - 1)).astype(np.int64)
+                clip_step = 0
+                if V > clip_len and self.num_clips > 1:
+                    clip_step = (V - clip_len) // (self.num_clips - 1)
+                indices = indices + i * clip_step
+
+            clip_indices.append(indices)
+            all_indices.extend(list(indices))
+
+        all_indices = np.clip(all_indices, 0, V - 1).astype(np.int64)
+        buffer = frames[all_indices]
+        return buffer, clip_indices
     def __len__(self):
         return len(self.samples)
 

@@ -16,5 +16,5 @@ conda activate /lab-share/Cardio-Mayourian-e2/Public/Echo_Clip/env
 cd /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA
 
 python -m app.main \
-    --fname configs/train/vitb16/pretrain-bch-platon.yaml \
+    --fname configs/train/vitb16/pretrain-bch-platon-mimic.yaml \
     --devices cuda:0 cuda:1 cuda:2 cuda:3 cuda:4 cuda:5 cuda:6 cuda:7
