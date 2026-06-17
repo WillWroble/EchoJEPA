@@ -13,7 +13,7 @@ cd /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/JEPA_probes
 mkdir -p logs
 
 python -u umap_study_age.py \
-    --checkpoint /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/echojepa_vitb_platon/epoch_day_5.pt \
-    --output_dir results/epoch_day_5 \
+    --checkpoint /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/echojepa_vitl_platon_mimic/epoch_day_1.pt \
+    --output_dir results/epoch_day_1_mimic_1024d \
     --data_dir /lab-share/Cardio-Mayourian-e2/Public/Echo_Pulled/Echo_Internal_30k \
     --n_samples 50000

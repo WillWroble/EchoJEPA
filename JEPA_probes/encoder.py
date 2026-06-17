@@ -26,7 +26,7 @@ def _clean_backbone_key(state_dict):
 
 
 def load_encoder(checkpoint_path, device='cuda'):
-    model = vit.vit_base(
+    model = vit.vit_large(
         img_size=(224, 224), patch_size=16, num_frames=16,
         tubelet_size=2, use_rope=True, use_sdpa=True, uniform_power=True,
     )

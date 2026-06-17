@@ -13,7 +13,7 @@ cd /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/JEPA_probes
 mkdir -p logs
 
 python -u umap_views.py \
-    --checkpoint /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/echojepa_vitb_platon/epoch_day_5.pt \
-    --output_dir results/epoch_day_5 \
+    --checkpoint /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/echojepa_vitl_platon_mimic/epoch_day_5.pt \
+    --output_dir results/epoch_day_5_mimic_1024d \
     --view_labels /lab-share/Cardio-Mayourian-e2/Public/Echo_Clip/view_labels.csv \
     --data_dir /lab-share/Cardio-Mayourian-e2/Public/Echo_Pulled/Echo_Internal_30k

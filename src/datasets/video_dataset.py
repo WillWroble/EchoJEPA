@@ -427,6 +427,7 @@ class VideoDataset(torch.utils.data.Dataset):
 
         all_indices = np.clip(all_indices, 0, V - 1).astype(np.int64)
 
+        """
         frames = []
         last_frame = None
         for idx in all_indices:
@@ -442,6 +443,22 @@ class VideoDataset(torch.utils.data.Dataset):
                 )
             frames.append(frame)
         cap.release()
+
+        """
+        max_idx = int(max(all_indices))
+        all_frames = []
+        for fidx in range(max_idx + 1):
+            ret, frame = cap.read()
+            if ret:
+                all_frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            elif all_frames:
+                all_frames.append(all_frames[-1])
+            else:
+                all_frames.append(np.zeros(
+                    (int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                     int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), 3), dtype=np.uint8))
+        cap.release()
+        frames = [all_frames[idx] for idx in all_indices]
 
         buffer = np.stack(frames)  # (T, H, W, 3) uint8 RGB
         return buffer, clip_indices
