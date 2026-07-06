@@ -12,5 +12,5 @@ source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /lab-share/Cardio-Mayourian-e2/Public/Echo_Clip/env
 cd /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA
 python -m app.main \
-    --fname configs/train/vitl16/pretrain-bch-platon-mimic.yaml \
+    --fname configs/train/vitl16/cooldown-mimic-bch.yaml \
     --devices cuda:0 cuda:1 cuda:2 cuda:3

@@ -13,7 +13,7 @@ data:
   - /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/avi_manifest_platon_mimic.csv
   datasets_weights:
   - 1.0
-  batch_size: 64
+  batch_size: 128
   crop_size: 224
   patch_size: 16
   dataset_fpcs:
@@ -93,8 +93,8 @@ optimization:
   ipe: 300
   ipe_scale: 1.25
   # LR: 5.25e-4 * (256/3072) = 4.375e-5
-  start_lr: 8.75e-6
-  lr: 4.375e-5
-  final_lr: 4.375e-5
+  start_lr: 1.665e-5
+  lr: 8.75e-5
+  final_lr: 8.75e-5
   warmup: 40
   epochs: 240

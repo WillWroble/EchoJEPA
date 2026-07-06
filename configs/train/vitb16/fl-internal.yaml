@@ -1,6 +1,6 @@
 # Federated EchoJEPA — Internal (BCH pediatric) site
 app: vjepa
-folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode1/internal
+folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/baseline/internal
 data:
   dataset_type: VideoDataset
   datasets:

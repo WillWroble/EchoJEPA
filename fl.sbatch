@@ -11,4 +11,9 @@
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /lab-share/Cardio-Mayourian-e2/Public/Echo_Clip/env
 cd /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA
-python -m app.vjepa.train_federated --fname $1 --device cuda:0
+
+
+python -m app.main \
+    --fname configs/train/vitb16/fl-internal.yaml \
+    --devices cuda:0
+

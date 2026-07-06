@@ -4,8 +4,10 @@ import numpy as np
 import cv2
 
 # --- Configuration ---
-INPUT_DIR = './mimic_p10_dcm'      # Folder where you downloaded the S3 files
-OUTPUT_DIR = './mimic_p10_mp4' # Folder to save videos
+#INPUT_DIR = './mimic_p10_dcm'      # Folder where you downloaded the S3 files
+#OUTPUT_DIR = './mimic_p10_mp4' # Folder to save videos
+INPUT_DIR = os.environ.get('DCM_INPUT', './mimic_p10_dcm')
+OUTPUT_DIR = os.environ.get('DCM_OUTPUT', './mimic_p10_mp4')
 TARGET_SIZE = (336, 336)       # (Width, Height)
 FPS = 30                       # Frames Per Second for output video
 

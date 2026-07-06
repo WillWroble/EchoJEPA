@@ -1,5 +1,5 @@
 app: vjepa
-folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode1/external
+folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode1_v2/external
 data:
   dataset_type: VideoDataset
   datasets:
@@ -71,7 +71,7 @@ optimization:
   warmup: 40
   epochs: 240
 federated:
-  server: 100.64.175.34:8080
+  server: localhost:8080
   mode: 1
-  local_steps: 300
+  local_steps: 3
   sync_momentum: 0.998

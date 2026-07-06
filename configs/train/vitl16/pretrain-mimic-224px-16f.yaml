@@ -4,11 +4,11 @@ nodes: 1
 tasks_per_node: 8
 cpus_per_task: 16
 mem_per_gpu: 220G
-folder: /home/sagemaker-user/user-default-efs/vjepa2/checkpoints/pretrain/mimic/vjepa2_vitl_224px_16f
+folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/echojepa_vitl_mimic_only_v2
 data:
   dataset_type: VideoDataset
   datasets:
-  - /home/sagemaker-user/user-default-efs/vjepa2/data/csv/mimic_annotations_s3.csv # 525k echocardiogram video clips (224px)
+  - /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/mp4_manifest_mimic.csv # 525k echocardiogram video clips (224px)
   datasets_weights:
   - 1.0
   batch_size: 128
@@ -81,8 +81,8 @@ model:
   zero_init_mask_tokens: true
 optimization:
   is_anneal: false # set true init linear decay schedule, otherwise cosine decay
-  force_load_pretrain: false # force loading of vitl ckpt, set to false if you have latest.pt and are resuming
-  anneal_ckpt: /home/sagemaker-user/user-default-efs/vjepa2/checkpoints/vitl.pt
+  force_load_pretrain: true # force loading of vitl ckpt, set to false if you have latest.pt and are resuming
+  anneal_ckpt: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/vitl_vjepa2.pt
     
   # EMA, WD as in V-JEPA2 recipe
   ema: [0.99925, 0.99925]
@@ -90,14 +90,14 @@ optimization:
   final_weight_decay: 0.04
 
   # Schedule is warmup (epochs 0..warmup) then constant LR through total epochs
-  ipe: 300
+  ipe: 150
   ipe_scale: 1.25
 
   # Scale LR from the 3072-global-batch recipe:
   # 5.25e-4 * (GLOBAL_BS/3072) = NEW_LR
-  start_lr: 3.33e-5
-  lr: 1.75e-4
-  final_lr: 1.75e-4
+  start_lr: 1.665e-5
+  lr: 8.75e-5
+  final_lr: 8.75e-5
 
   warmup: 40
   # Total epochs must be > warmup

@@ -28,7 +28,6 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import yaml
-
 import flwr as fl
 
 from app.vjepa.transforms import make_transforms
@@ -37,10 +36,14 @@ from src.datasets.data_manager import init_data
 from src.masks.multiseq_multiblock3d import MaskCollator
 from src.masks.utils import apply_masks
 from src.utils.logging import AverageMeter, get_logger
-
+import random
 logger = get_logger(__name__, force=True)
 
-
+_GLOBAL_SEED = 0
+random.seed(_GLOBAL_SEED)
+np.random.seed(_GLOBAL_SEED)
+torch.manual_seed(_GLOBAL_SEED)
+torch.backends.cudnn.benchmark = True
 # -- Serialization --
 
 def state_dict_to_numpy(state_dict):
@@ -335,7 +338,6 @@ class JEPATrainer:
                 )
 
     def save_checkpoint(self, round_num):
-        path = os.path.join(self.folder, f"round_{round_num}.pt")
         torch.save({
             "encoder": self.encoder.state_dict(),
             "predictor": self.predictor.state_dict(),
@@ -344,20 +346,7 @@ class JEPATrainer:
             "scaler": None if self.scaler is None else self.scaler.state_dict(),
             "round": round_num,
             "step": self.step_count,
-        }, path)
-        # keep latest pointer
-        latest = os.path.join(self.folder, "latest.pt")
-        torch.save({
-            "encoder": self.encoder.state_dict(),
-            "predictor": self.predictor.state_dict(),
-            "target_encoder": self.target_encoder.state_dict(),
-            "opt": self.optimizer.state_dict(),
-            "scaler": None if self.scaler is None else self.scaler.state_dict(),
-            "round": round_num,
-            "step": self.step_count,
-        }, latest)
-        logger.info(f"Checkpoint saved: {path}")
-
+        }, os.path.join(self.folder, "latest.pt"))
 
 # -- Flower Client --
 
@@ -396,7 +385,8 @@ class EchoJEPAClient(fl.client.NumPyClient):
         avg_loss, num_samples = self.trainer.train_round(self.local_steps, do_ema)
         self.round_num += 1
 
-        self.trainer.save_checkpoint(self.round_num)
+        if self.round_num % 300 == 0:
+            self.trainer.save_checkpoint(self.round_num)
         logger.info(f"=== Round {self.round_num} complete (mode {self.mode}) ===")
 
         return self.get_parameters(config), num_samples, {"loss": float(avg_loss)}
