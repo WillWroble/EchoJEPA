@@ -1,11 +1,11 @@
 app: vjepa
-folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode1_v3/internal
+folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode1_v6/external
 data:
   dataset_type: VideoDataset
   datasets:
-  - /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/avi_manifest.csv
+  - /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/mp4_manifest_mimic.csv
   datasets_weights: [1.0]
-  batch_size: 64
+  batch_size: 128
   crop_size: 224
   patch_size: 16
   dataset_fpcs: [16]
@@ -46,8 +46,8 @@ meta:
   seed: 234
   use_sdpa: true
 model:
-  model_name: vit_base
-  pred_depth: 6
+  model_name: vit_large
+  pred_depth: 12
   pred_embed_dim: 384
   pred_num_heads: 12
   uniform_power: true
@@ -57,21 +57,23 @@ model:
   use_rope: true
   zero_init_mask_tokens: true
 optimization:
-  is_anneal: false
-  force_load_pretrain: false
-  anneal_ckpt: /home/ch270045/.cache/torch/hub/checkpoints/vjepa2_1_vitb_dist_vitG_384.pt
-  ema: [0.998, 0.998]
+  is_anneal: true
+  force_load_pretrain: true
+  anneal_ckpt: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/echojepa_vitl_mimic_only_v2/latest.pt
+  ema: [0.99925, 0.99925]
   weight_decay: 0.04
   final_weight_decay: 0.04
   ipe: 300
-  ipe_scale: 1.25
-  start_lr: 1.75e-5
-  lr: 8.75e-5
-  final_lr: 8.75e-5
-  warmup: 40
-  epochs: 240
+  ipe_scale: 1.0
+  
+  start_lr: 2.1875e-5
+  lr: 2.1875e-5
+  final_lr: 2.5e-7
+
+  warmup: 0
+  epochs: 80
 federated:
   server: localhost:8080
   mode: 1
-  local_steps: 30
+  local_steps: 3
   sync_momentum: 0.998

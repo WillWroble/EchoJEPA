@@ -5,6 +5,7 @@
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --time=12:00:00
+#SBATCH --partition=bch-gpu-pe
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /lab-share/Cardio-Mayourian-e2/Public/Echo_Clip/env
@@ -13,7 +14,7 @@ cd /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/JEPA_probes
 mkdir -p logs
 
 python -u umap_views.py \
-    --checkpoint /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/baseline/internal/latest.pt \
-    --output_dir results/fl/baseline/internal \
+    --checkpoint /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode1_v6/internal/round780.pt \
+    --output_dir results/fl/mode1_v6/internal/round780 \
     --view_labels /lab-share/Cardio-Mayourian-e2/Public/Echo_Clip/view_labels.csv \
     --data_dir /lab-share/Cardio-Mayourian-e2/Public/Echo_Pulled/Echo_Internal_30k

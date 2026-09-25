@@ -14,6 +14,7 @@ __MACOSX/
 # Large Data & Medical Images
 model_data/
 mimic_iv/
+mimic_iv_by_study/
 *.dcm
 *.pth
 *.pt
@@ -26,6 +27,7 @@ mimic_iv/
 *.hdf5
 *.png
 *.mp4
+*.txt
 #PHI
 *.out
 *.err

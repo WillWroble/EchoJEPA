@@ -26,7 +26,7 @@ def _clean_backbone_key(state_dict):
 
 
 def load_encoder(checkpoint_path, device='cuda'):
-    model = vit.vit_base(
+    model = vit.vit_large(
         img_size=(224, 224), patch_size=16, num_frames=16,
         tubelet_size=2, use_rope=True, use_sdpa=True, uniform_power=True,
     )
@@ -48,7 +48,7 @@ def preprocess_clip(buffer, resolution=224):
     return (x - MEAN) / STD
 
 
-def load_and_sample_clips(avi_path, num_clips=4, fpc=16, fps=8):
+def load_and_sample_clips(avi_path, num_clips=4, fpc=16, fps=24):
     cap = cv2.VideoCapture(str(avi_path))
     if not cap.isOpened():
         return None

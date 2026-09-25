@@ -1,8 +1,10 @@
 #!/bin/bash
-#SBATCH --array=1-3138%64
+##SBATCH --array=1-3300%64
+##SBATCH --array=1,2,3,4,5,6,7,8,55,105,125,141,149,169,213,263,305,341,414,483,501,505,510,529,530,574,580,649,655,659,760,795,811,874,965,980,986,1102,1109,1141,1168,1179,1346,1369,1377,1379,1400,1493,1501,1535,1541,1580,1641,1666,1687,1755,1769,1771,1874,1885,1887,1888,1987,1993,2005,2009,2010,2011,2012,2020,2026,2055,2065,2070,2119,2184,2200,2248,2285,2317,2331,2364,2378,2392,2436,2438,2465,2472,2650,2674,2705,2714,2722,2781,2799,2823,2871,3041,3054,3157,3172,3187,3211,3235,3264,3272,329
+#SBATCH --array=105,169,263,329,341,414,483,501,505,510,529,530,574,580,649,874,1141,1179,1346,1369,1377,1379,1400,1493,1501,1535,1541,1580,1641,1666,1687,2070,2285,2392,2472,2799,2823,2871,3041
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=16G
-#SBATCH --time=2:00:00
+#SBATCH --mem=64G
+#SBATCH --time=4:00:00
 #SBATCH --job-name=dcm2mp4
 #SBATCH --output=logs/dcm2mp4_%A_%a.out
 #SBATCH --error=logs/dcm2mp4_%A_%a.err
@@ -12,6 +14,6 @@ source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /lab-share/Cardio-Mayourian-e2/Public/Echo_Clip/env
 cd /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA
 
-export DCM_INPUT=$(sed -n "${SLURM_ARRAY_TASK_ID}p" new_mimic_study_dirs.txt)
+export DCM_INPUT=$(sed -n "${SLURM_ARRAY_TASK_ID}p" new_mimic_study_dirs_101.txt)
 export DCM_OUTPUT=/lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/mimic_iv
 python -u data/convert_dicom.py

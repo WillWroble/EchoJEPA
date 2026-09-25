@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "echofl"
+version = "1.0.0"
+description = "Federated EchoJEPA"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["echofl"]
+
+[tool.flwr.app]
+publisher = "bch"
+
+[tool.flwr.app.components]
+serverapp = "echofl.server_app:app"
+clientapp = "echofl.client_app:app"
+
+[tool.flwr.app.config]
+num-server-rounds = 720

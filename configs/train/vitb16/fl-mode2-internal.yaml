@@ -1,5 +1,5 @@
 app: vjepa
-folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode2_v3/internal
+folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode2_v4/internal
 data:
   dataset_type: VideoDataset
   datasets:

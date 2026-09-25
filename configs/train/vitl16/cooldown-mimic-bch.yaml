@@ -6,7 +6,7 @@ cpus_per_task: 16
 mem_per_gpu: 220G
 
 # Write cooldown outputs to a NEW folder (recommended; don't overwrite pretrain)
-folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/echojepa_vitl_mimic_bch_cooldown
+folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/echojepa_vitl_mimic_bch_cooldown_24fps
 
 data:
   dataset_type: VideoDataset
@@ -20,7 +20,7 @@ data:
   crop_size: 224
   patch_size: 16
   dataset_fpcs: [16]
-  fps: 8
+  fps: 24
   tubelet_size: 2
 
   num_workers: 8

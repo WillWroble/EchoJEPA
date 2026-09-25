@@ -47,12 +47,12 @@ torch.backends.cudnn.benchmark = True
 # -- Serialization --
 
 def state_dict_to_numpy(state_dict):
-    return [v.cpu().numpy() for v in state_dict.values()]
+    return [v.cpu().half().numpy() for v in state_dict.values()]
 
 
 def load_numpy_into_model(model, params):
     state_dict = OrderedDict(
-        {k: torch.from_numpy(v) for k, v in zip(model.state_dict().keys(), params)}
+        {k: torch.from_numpy(v).float() for k, v in zip(model.state_dict().keys(), params)}
     )
     model.load_state_dict(state_dict)
 
@@ -252,6 +252,29 @@ class JEPATrainer:
             yaml.dump(args, f)
 
         self.step_count = 0
+        # --- resume from federated checkpoint ---
+        load_model = cfgs_meta.get("load_checkpoint", False)
+        r_file = cfgs_meta.get("read_checkpoint", None)
+        latest_path = os.path.join(self.folder, "latest.pt")
+        if load_model or os.path.exists(latest_path):
+            load_path = r_file if r_file is not None else latest_path
+            if load_path and os.path.exists(load_path):
+                logger.info(f"Resuming from checkpoint: {load_path}")
+                ckpt = torch.load(load_path, map_location=device)
+                self.encoder.load_state_dict(ckpt["encoder"])
+                self.predictor.load_state_dict(ckpt["predictor"])
+                self.target_encoder.load_state_dict(ckpt["target_encoder"])
+                self.optimizer.load_state_dict(ckpt["opt"])
+                if self.scaler is not None and ckpt.get("scaler") is not None:
+                    self.scaler.load_state_dict(ckpt["scaler"])
+                self.step_count = ckpt.get("step", 0)
+                for _ in range(self.step_count):
+                    self.scheduler.step()
+                    self.wd_scheduler.step()
+                    next(self.momentum_scheduler)
+                logger.info(f"Resumed at step {self.step_count}")
+                del ckpt
+                gc.collect()
         logger.info("Trainer initialized.")
 
     def _next_batch(self):
@@ -346,7 +369,7 @@ class JEPATrainer:
             "scaler": None if self.scaler is None else self.scaler.state_dict(),
             "round": round_num,
             "step": self.step_count,
-        }, os.path.join(self.folder, "latest.pt"))
+        }, os.path.join(self.folder, f"round{round_num}.pt"))
 
 # -- Flower Client --
 
@@ -366,6 +389,8 @@ class EchoJEPAClient(fl.client.NumPyClient):
                 + state_dict_to_numpy(self.trainer.predictor.state_dict())
                 + state_dict_to_numpy(self.trainer.target_encoder.state_dict())
             )
+        elif self.mode == 2:
+            return state_dict_to_numpy(self.trainer.target_encoder.state_dict())    
         return state_dict_to_numpy(self.trainer.encoder.state_dict())
 
     def fit(self, parameters, config):
@@ -377,18 +402,20 @@ class EchoJEPAClient(fl.client.NumPyClient):
             load_numpy_into_model(self.trainer.predictor, parameters[n_enc:n_enc + n_pred])
             load_numpy_into_model(self.trainer.target_encoder, parameters[n_enc + n_pred:])
         elif self.mode == 2:
-            self.trainer.ema_update_target_from_pool(parameters, self.sync_momentum)
+            #self.trainer.ema_update_target_from_pool(parameters, self.sync_momentum)
+            load_numpy_into_model(self.trainer.target_encoder, parameters)
         elif self.mode == 3:
             load_numpy_into_model(self.trainer.encoder, parameters)
 
-        do_ema = (self.mode != 2)
+        do_ema = True #(self.mode != 2)
         avg_loss, num_samples = self.trainer.train_round(self.local_steps, do_ema)
         self.round_num += 1
 
-        if self.round_num % 300 == 0:
+        if self.round_num % 60 == 0:
             self.trainer.save_checkpoint(self.round_num)
         logger.info(f"=== Round {self.round_num} complete (mode {self.mode}) ===")
 
+        num_samples = 1
         return self.get_parameters(config), num_samples, {"loss": float(avg_loss)}
 
     def evaluate(self, parameters, config):

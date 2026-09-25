@@ -8,6 +8,7 @@
 #SBATCH --job-name=echojepa_vitl
 #SBATCH --output=logs/pretrain_vitl_%j.out
 #SBATCH --error=logs/pretrain_vitl_%j.err
+#SBATCH --partition=bch-gpu-xlarge
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /lab-share/Cardio-Mayourian-e2/Public/Echo_Clip/env
 cd /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA
