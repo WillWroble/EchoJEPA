@@ -252,6 +252,7 @@ class JEPATrainer:
             yaml.dump(args, f)
 
         self.step_count = 0
+        self.round_num = 0
         # --- resume from federated checkpoint ---
         load_model = cfgs_meta.get("load_checkpoint", False)
         r_file = cfgs_meta.get("read_checkpoint", None)
@@ -268,6 +269,7 @@ class JEPATrainer:
                 if self.scaler is not None and ckpt.get("scaler") is not None:
                     self.scaler.load_state_dict(ckpt["scaler"])
                 self.step_count = ckpt.get("step", 0)
+                self.round_num = ckpt.get("round", 0)
                 for _ in range(self.step_count):
                     self.scheduler.step()
                     self.wd_scheduler.step()
@@ -380,7 +382,7 @@ class EchoJEPAClient(fl.client.NumPyClient):
         self.mode = mode
         self.local_steps = local_steps
         self.sync_momentum = sync_momentum
-        self.round_num = 0
+        self.round_num = trainer.round_num
 
     def get_parameters(self, config):
         if self.mode == 1:
