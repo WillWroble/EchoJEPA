@@ -1,5 +1,5 @@
 app: vjepa
-folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode2_v6/external
+folder: /lab-share/Cardio-Mayourian-e2/Public/Echo_JEPA/checkpoints/fl/mode2_v7/external
 data:
   dataset_type: VideoDataset
   datasets:
@@ -63,7 +63,7 @@ optimization:
   ema: [0.99925, 0.99925]
   weight_decay: 0.04
   final_weight_decay: 0.04
-  ipe: 300
+  ipe: 30
   ipe_scale: 1.25
   
   start_lr: 4.1625e-6
