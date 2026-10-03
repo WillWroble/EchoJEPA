@@ -46,8 +46,15 @@ torch.manual_seed(_GLOBAL_SEED)
 torch.backends.cudnn.benchmark = True
 # -- Serialization --
 
+# Clients send round deltas (local - global) in fp16 instead of weights:
+# fp16 then keeps ~3 significant digits of the update itself rather than
+# rounding away updates smaller than half a ULP of the weight. The scale
+# keeps small deltas out of the fp16 subnormal range.
+_DELTA_SCALE = 1024.0
+
+
 def state_dict_to_numpy(state_dict):
-    return [v.cpu().half().numpy() for v in state_dict.values()]
+    return [v.cpu().float().numpy() for v in state_dict.values()]
 
 
 def load_numpy_into_model(model, params):
@@ -383,8 +390,16 @@ class EchoJEPAClient(fl.client.NumPyClient):
         self.local_steps = local_steps
         self.sync_momentum = sync_momentum
         self.round_num = trainer.round_num
+        self.global_params = None  # fp32 copy of the last averaged weights
 
     def get_parameters(self, config):
+        params = self._local_params()
+        if self.global_params is None:
+            return [p.astype(np.float16) for p in params]
+        return [((p - g) * _DELTA_SCALE).astype(np.float16)
+                for p, g in zip(params, self.global_params)]
+
+    def _local_params(self):
         if self.mode == 1:
             return (
                 state_dict_to_numpy(self.trainer.encoder.state_dict())
@@ -398,6 +413,14 @@ class EchoJEPAClient(fl.client.NumPyClient):
     def fit(self, parameters, config):
         n_enc = self.trainer.n_encoder
         n_pred = self.trainer.n_predictor
+
+        # first round (or after restart) the server sends full weights; after that, averaged deltas
+        if self.global_params is None:
+            self.global_params = [p.astype(np.float32) for p in parameters]
+        else:
+            self.global_params = [g + p.astype(np.float32) / _DELTA_SCALE
+                                  for g, p in zip(self.global_params, parameters)]
+        parameters = self.global_params
 
         if self.mode == 1:
             load_numpy_into_model(self.trainer.encoder, parameters[:n_enc])
